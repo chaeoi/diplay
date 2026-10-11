@@ -1,0 +1,62 @@
+name: Build and Release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject credential files in public source
+        run: python3 scripts/check_public_tree.py
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: ./gradlew :mobile:assembleDebug --stacktrace
+
+      - name: Prepare APK Artifact
+        run: |
+          mkdir -p release-artifacts
+          cp mobile/build/outputs/apk/debug/*.apk release-artifacts/diplay-v0.1.0-debug.apk
+          cd release-artifacts
+          sha256sum diplay-v0.1.0-debug.apk > sha256sum.txt
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.0-preview
+          name: "DiPlay v0.1.0 (通用定制版)"
+          body: |
+            ## DiPlay v0.1.0 全新体验版 (通用 Android 车机定制)
+
+            本版本基于 DiPlay 进行深度解耦与优化：
+            - **版本**：0.1.0
+            - **精简专有功能**：切断比亚迪专属 ADB 探针与 HUD/仪表投屏，大幅减轻车机内存与后台开销。
+            - **纯净通用体验**：面向通用 Android 7.1+ 车机，支持有线与无线即插即用 CarPlay。
+            - **屏蔽官方升级检查**：避免定制版本被官方更新覆盖。
+
+            ### 下载文件
+            - `diplay-v0.1.0-debug.apk`：车机安装包
+            - `sha256sum.txt`：SHA-256 校验文件
+          files: |
+            release-artifacts/diplay-v0.1.0-debug.apk
+            release-artifacts/sha256sum.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

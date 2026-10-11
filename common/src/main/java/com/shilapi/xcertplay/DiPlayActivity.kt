@@ -348,7 +348,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         refreshAppearance()
         rememberLaunchAppearance()
         languagePreferenceAtCreate = AppLocale.preference(this)
-        com.shilapi.xcertplay.hud.BydNavigationOutputs.onAppOpened(applicationContext)
+        if (FeatureConfig.enableBydFeatures) {
+            com.shilapi.xcertplay.hud.BydNavigationOutputs.onAppOpened(applicationContext)
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (Build.VERSION.SDK_INT >= 28) {
             window.attributes = window.attributes.apply {
@@ -373,7 +375,9 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             ?: if (setupError == null && SetupGuide.shouldOpenOnLaunch(SetupGuide.seen(this),
                     DiPlayPreferences.phoneAddress(this) != null)) "setup" else "home"
         render()
-        scheduleAutomaticVehicleValidation()
+        if (FeatureConfig.enableBydFeatures) {
+            scheduleAutomaticVehicleValidation()
+        }
         handleWirelessRecovery()
         if (consumeBluetoothAutoConnectIntent(intent)) {
             if (initialLaunch) {
