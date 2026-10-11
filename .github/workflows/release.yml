@@ -37,11 +37,11 @@ jobs:
         id: prep
         run: |
           mkdir -p release-artifacts
-          APK_FILE="release-artifacts/diplay-v0.1.0-debug.apk"
+          APK_FILE="release-artifacts/diplay-v0.1.0.apk"
           cp mobile/build/outputs/apk/debug/*.apk "$APK_FILE"
 
           cd release-artifacts
-          sha256sum diplay-v0.1.0-debug.apk > sha256sum.txt
+          sha256sum diplay-v0.1.0.apk > sha256sum.txt
           cd ..
 
           python3 scripts/generate_release_notes.py
@@ -49,11 +49,11 @@ jobs:
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0-preview
-          name: "DiPlay v0.1.0 通用车机定制版 (Snapshot)"
+          tag_name: v0.1.0
+          name: "DiPlay v0.1.0"
           body_path: release_body.md
           files: |
-            release-artifacts/diplay-v0.1.0-debug.apk
+            release-artifacts/diplay-v0.1.0.apk
             release-artifacts/sha256sum.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
