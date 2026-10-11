@@ -15,6 +15,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.shilapi.xcertplay.CarPlayBackgroundSession
 import java.util.concurrent.TimeUnit
+import com.shilapi.xcertplay.FeatureConfig
 
 internal object BackgroundUpdatePolicy {
     /** A stored but inactive session is connecting or recovering. Active sessions are safe. */
@@ -75,6 +76,11 @@ internal object BackgroundUpdateScheduler {
     private const val OPEN_WORK = "diplay-open-update-check"
 
     fun schedule(context: Context) {
+        if (!FeatureConfig.enableAutoUpdate) {
+            WorkManager.getInstance(context.applicationContext).cancelUniqueWork(PERIODIC_WORK)
+            WorkManager.getInstance(context.applicationContext).cancelUniqueWork(OPEN_WORK)
+            return
+        }
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()

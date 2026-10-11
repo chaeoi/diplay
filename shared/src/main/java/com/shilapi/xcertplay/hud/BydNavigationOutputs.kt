@@ -1,12 +1,14 @@
 package com.shilapi.xcertplay.hud
 
 import android.content.Context
+import com.shilapi.xcertplay.FeatureConfig
 import com.shilapi.xcertplay.iap2.wire.Iap2Frame
 
 /** Nonblocking boundary between phone control messages and vendor services. */
 object BydNavigationOutputs {
     /** Recover a journaled interrupted output when the app opens, even before a phone reconnects. */
     fun onAppOpened(context: Context) {
+        if (!FeatureConfig.enableBydFeatures) return
         BydBluetoothSuspend.onAppOpened(context)
         BydOemClusterNavi.restoreIfNeeded(context)
         BydDiLink3ClusterOutput.restoreIfNeeded(context)
@@ -67,6 +69,7 @@ object BydNavigationOutputs {
     fun parked(context: Context): Boolean? = BydParkedState.parked(context.applicationContext)
 
     fun start(context: Context) {
+        if (!FeatureConfig.enableBydFeatures) return
         val app = context.applicationContext
         useStandalone = BydStandaloneHudOutput.available(app)
         if (useStandalone) standalone.start { BydStandaloneNavigationBridge.initialize(app) }

@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay.hud
 
 import android.content.Context
+import com.shilapi.xcertplay.FeatureConfig
 import com.shilapi.xcertplay.transport.EvChargingConnectors
 
 /**
@@ -146,22 +147,26 @@ object BydOutputSettings {
 
     /** Whether the head unit has a BYD navigation receiver. This says nothing about ADB vehicle data. */
     fun navigationAvailable(context: Context): Boolean =
-        BydStandaloneHudOutput.available(context) ||
-            BydAmapAdapter.find { installed(context, it) } != null ||
-            installed(context, "com.ts.car.someip.service")
+        FeatureConfig.enableBydFeatures && (
+            BydStandaloneHudOutput.available(context) ||
+                BydAmapAdapter.find { installed(context, it) } != null ||
+                installed(context, "com.ts.car.someip.service")
+        )
 
     /** Whether the head unit has a BYD navigation receiver or is a BYD head unit, so settings can show navigation/map options. */
     fun available(context: Context): Boolean =
-        navigationAvailable(context) ||
-            installed(context, "com.byd.carsettings") ||
-            installed(context, "com.byd.appmgr") ||
-            installed(context, "com.byd.deviceinfo") ||
-            installed(context, "com.byd.service") ||
-            android.os.Build.FINGERPRINT.contains("BYD", ignoreCase = true) ||
-            android.os.Build.BRAND.contains("BYD", ignoreCase = true) ||
-            android.os.Build.MANUFACTURER.contains("BYD", ignoreCase = true) ||
-            android.os.Build.PRODUCT.contains("BYD", ignoreCase = true) ||
-            android.os.Build.DEVICE.contains("BYD", ignoreCase = true)
+        FeatureConfig.enableBydFeatures && (
+            navigationAvailable(context) ||
+                installed(context, "com.byd.carsettings") ||
+                installed(context, "com.byd.appmgr") ||
+                installed(context, "com.byd.deviceinfo") ||
+                installed(context, "com.byd.service") ||
+                android.os.Build.FINGERPRINT.contains("BYD", ignoreCase = true) ||
+                android.os.Build.BRAND.contains("BYD", ignoreCase = true) ||
+                android.os.Build.MANUFACTURER.contains("BYD", ignoreCase = true) ||
+                android.os.Build.PRODUCT.contains("BYD", ignoreCase = true) ||
+                android.os.Build.DEVICE.contains("BYD", ignoreCase = true)
+        )
 
     private fun installed(context: Context, pkg: String): Boolean =
         runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess

@@ -14,14 +14,29 @@ internal interface BydVehicleSettingsBackend {
 }
 
 internal object AndroidBydVehicleSettingsBackend : BydVehicleSettingsBackend {
-    override fun check(context: Context, mayAsk: Boolean) = BydAdbAccess.check(context, mayAsk)
+    override fun check(context: Context, mayAsk: Boolean): BydAdbAccess.Status {
+        if (!FeatureConfig.enableBydFeatures) {
+            return BydAdbAccess.Status(BydAdbAccess.State.UNSUPPORTED)
+        }
+        return BydAdbAccess.check(context, mayAsk)
+    }
 
-    override fun checkState(context: Context, mayAsk: Boolean) = BydAdbAccess.checkState(context, mayAsk)
+    override fun checkState(context: Context, mayAsk: Boolean): BydAdbAccess.State {
+        if (!FeatureConfig.enableBydFeatures) {
+            return BydAdbAccess.State.UNSUPPORTED
+        }
+        return BydAdbAccess.checkState(context, mayAsk)
+    }
 
-    override fun probe(context: Context, persist: Boolean) =
-        BydVehicleCapabilityProbe.probe(context, persist)
+    override fun probe(context: Context, persist: Boolean): BydVehicleProbeOutcome {
+        if (!FeatureConfig.enableBydFeatures) {
+            return BydVehicleProbeOutcome(BydAdbAccess.State.UNSUPPORTED)
+        }
+        return BydVehicleCapabilityProbe.probe(context, persist)
+    }
 
     override fun execute(name: String, block: () -> Unit) {
+        if (!FeatureConfig.enableBydFeatures) return
         Thread(block, name).start()
     }
 }

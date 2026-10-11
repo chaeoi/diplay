@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay.update
 
 import android.content.Context
+import com.shilapi.xcertplay.FeatureConfig
 
 /** Durable metadata only. APK downloads always remain an explicit foreground action. */
 internal object UpdateAvailability {
@@ -27,6 +28,10 @@ internal object UpdateAvailability {
     }
 
     fun available(context: Context, installedVersion: String): UpdateRelease? {
+        if (!FeatureConfig.enableAutoUpdate) {
+            clear(context)
+            return null
+        }
         val values = preferences(context)
         val release = UpdateRelease(
             tagName = values.getString(TAG, null) ?: return null,

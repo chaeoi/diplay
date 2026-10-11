@@ -879,29 +879,31 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         if (!compact) right.addView(label(getString(R.string.make_diplay_feel_right_for_your_car), 14, MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(10), 0, dp(24)) })
         else right.addView(space(12))
         right.addView(label(getString(R.string.home_public_preview, version()), 12, MUTED).apply { letterSpacing = .08f })
-        availableUpdate?.let { release ->
-            val message = getString(R.string.update_available_home)
-            val tint = { alpha: Int -> (WARNING and 0x00FFFFFF) or (alpha shl 24) }
-            val chip = GradientDrawable().apply {
-                setColor(tint(0x26))
-                cornerRadius = dp(16).toFloat()
-                setStroke(dp(1), tint(0x80))
+        if (FeatureConfig.enableAutoUpdate) {
+            availableUpdate?.let { release ->
+                val message = getString(R.string.update_available_home)
+                val tint = { alpha: Int -> (WARNING and 0x00FFFFFF) or (alpha shl 24) }
+                val chip = GradientDrawable().apply {
+                    setColor(tint(0x26))
+                    cornerRadius = dp(16).toFloat()
+                    setStroke(dp(1), tint(0x80))
+                }
+                right.addView(label(message, 14, WARNING, true).apply {
+                    gravity = Gravity.CENTER
+                    minHeight = dp(60)
+                    setPadding(dp(12), dp(8), dp(12), dp(8))
+                    isClickable = true
+                    isFocusable = true
+                    contentDescription = message
+                    background = RippleDrawable(
+                        ColorStateList.valueOf(RIPPLE),
+                        chip,
+                        GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() },
+                    )
+                    foreground = focusRing(radiusDp = 16)
+                    setOnClickListener { openAvailableUpdate(release) }
+                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
             }
-            right.addView(label(message, 14, WARNING, true).apply {
-                gravity = Gravity.CENTER
-                minHeight = dp(60)
-                setPadding(dp(12), dp(8), dp(12), dp(8))
-                isClickable = true
-                isFocusable = true
-                contentDescription = message
-                background = RippleDrawable(
-                    ColorStateList.valueOf(RIPPLE),
-                    chip,
-                    GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(16).toFloat() },
-                )
-                foreground = focusRing(radiusDp = 16)
-                setOnClickListener { openAvailableUpdate(release) }
-            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
         }
         if (compact && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             val compactRight = column().apply {
@@ -1263,7 +1265,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         settingsPageTitle(content, getString(R.string.settings_navigation), getString(R.string.settings_navigation_summary))
         renderSections(content, SettingsInformationArchitecture.sectionsByCategory.getValue(SettingsCategory.NAVIGATION))
         // The BYD card is hidden without its receiver; say so instead of leaving a gap.
-        if (!BydOutputSettings.available(this)) {
+        if (FeatureConfig.enableBydFeatures && !BydOutputSettings.available(this)) {
             content.addView(label(getString(R.string.settings_byd_navigation_unavailable), 15, MUTED).apply {
                 setPadding(dp(4), 0, dp(4), dp(SETTINGS_BLOCK_GAP_DP))
             })
@@ -1518,6 +1520,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     private fun advancedVehicleDataSettings(content: LinearLayout) {
+        if (!FeatureConfig.enableBydFeatures) return
         section(content, getString(R.string.settings_vehicle), R.drawable.ic_dp_dashboard) { card ->
             card.addView(button(getString(if (bydVehicleAdvancedExpanded)
                 R.string.hide_advanced_vehicle_data else R.string.advanced_vehicle_data), false) {
@@ -1651,7 +1654,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
             }
             card.addView(label(getString(R.string.settings_usb_charging_description), 14, MUTED))
         }
-        if (settingsSectionFilter?.contains(SettingsSection.BYD_ADB) != false) bydAdbSettings(content)
+        if (FeatureConfig.enableBydFeatures && settingsSectionFilter?.contains(SettingsSection.BYD_ADB) != false) bydAdbSettings(content)
         filteredSection(content, SettingsSection.DISPLAY_AND_PERFORMANCE,
             getString(R.string.display_and_performance), R.drawable.ic_dp_display) { card ->
             val appearances = AppAppearance.entries
@@ -2191,10 +2194,12 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         content.addView(label(getString(R.string.carplay_at_home_in_your_car), 20, MUTED).apply { setPadding(0, dp(8), 0, dp(24)) })
         section(content, getString(R.string.about_public_preview_prefix, version())) { card ->
             card.addView(label(getString(R.string.an_independent_carplay_receiver_for_android_head_units_wir), 17, TEXT))
-            card.addView(updateRow())
-            toggle(card, getString(R.string.settings_background_update_checks),
-                getString(R.string.settings_background_update_checks_description),
-                UpdateAvailability.backgroundChecksEnabled(this)) { UpdateAvailability.saveBackgroundChecksEnabled(this, it) }
+            if (FeatureConfig.enableAutoUpdate) {
+                card.addView(updateRow())
+                toggle(card, getString(R.string.settings_background_update_checks),
+                    getString(R.string.settings_background_update_checks_description),
+                    UpdateAvailability.backgroundChecksEnabled(this)) { UpdateAvailability.saveBackgroundChecksEnabled(this, it) }
+            }
         }
         section(content, getString(R.string.made_possible_by_open_source)) { card ->
             card.addView(label(getString(R.string.receiver_based_on_xcertplay_licensed_under_gpl_3_0_diplay), 16, MUTED))
@@ -2274,6 +2279,7 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
     }
 
     private fun scheduleBackgroundUpdateChecks() {
+        if (!FeatureConfig.enableAutoUpdate) return
         runCatching { BackgroundUpdateScheduler.schedule(applicationContext) }
             .onFailure { Log.i("DiPlay-Update", "background update scheduling unavailable", it) }
     }
@@ -5196,6 +5202,11 @@ class DiPlayActivity : ComponentActivity(), AppAppearanceOwner {
         icon: Int? = null,
         build: (LinearLayout) -> Unit,
     ) {
+        if (!FeatureConfig.enableBydFeatures) {
+            if (key == SettingsSection.BYD_ADB || key == SettingsSection.BYD_NAVIGATION) return
+        }
+        if (!FeatureConfig.enableAmbientLighting && key == SettingsSection.AMBIENT_LIGHTING) return
+        if (!FeatureConfig.enableClusterDisplay && key == SettingsSection.CLUSTER_MAP) return
         if (settingsSectionFilter?.contains(key) == false) return
         section(parent, title, icon, build)
     }

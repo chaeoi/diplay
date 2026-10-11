@@ -2,6 +2,7 @@ package com.shilapi.xcertplay.hud
 
 import android.content.Context
 import android.os.Build
+import com.shilapi.xcertplay.FeatureConfig
 import com.shilapi.xcertplay.adb.AdbKeys
 import com.shilapi.xcertplay.adb.LocalAdb
 import java.io.Closeable
@@ -28,6 +29,7 @@ object BydCallPopupGuard {
 
     fun update(context: Context, candidate: Any, foregroundConnected: Boolean,
         connected: () -> Boolean) = synchronized(gate) {
+        if (!FeatureConfig.enableBydFeatures) return@synchronized
         if (!foregroundConnected && owner !== candidate) return@synchronized
         if (foregroundConnected && owner === candidate) return@synchronized
         owner = if (foregroundConnected) candidate else null

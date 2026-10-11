@@ -1,5 +1,6 @@
 package com.shilapi.xcertplay.media
 
+import com.shilapi.xcertplay.FeatureConfig
 import com.shilapi.xcertplay.hud.BydAmbientLightPolicy
 import java.util.concurrent.CompletableFuture
 
@@ -35,9 +36,10 @@ internal class AmbientLampSession(
     fun isReady(): Boolean = ready && !stopping && client?.unhealthy() == false
 
     fun setEnabled(value: Boolean) {
-        if (enabled == value) return
-        enabled = value
-        if (!value) {
+        val targetValue = if (FeatureConfig.enableAmbientLighting) value else false
+        if (enabled == targetValue) return
+        enabled = targetValue
+        if (!targetValue) {
             if (client == null && !stopping && !restoreUnconfirmed) {
                 original = null; failures = 0; retryAt = now()
             }
