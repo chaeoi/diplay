@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Reject credential files in public source
         run: python3 scripts/check_public_tree.py
@@ -31,30 +33,67 @@ jobs:
       - name: Build APK
         run: ./gradlew :mobile:assembleDebug --stacktrace
 
-      - name: Prepare APK Artifact
+      - name: Prepare Release Artifacts and Detailed Changelog
+        id: prep
         run: |
           mkdir -p release-artifacts
-          cp mobile/build/outputs/apk/debug/*.apk release-artifacts/diplay-v0.1.0-debug.apk
+          APK_FILE="release-artifacts/diplay-v0.1.0-debug.apk"
+          cp mobile/build/outputs/apk/debug/*.apk "$APK_FILE"
+
           cd release-artifacts
           sha256sum diplay-v0.1.0-debug.apk > sha256sum.txt
+          cd ..
+
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          DATE_STR=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          cat << 'EOF' > release_body.md
+          ## DiPlay 通用车机定制版 · 持续交付快照
+
+          > **构建时间**：DATE_PLACEHOLDER
+          > **Git Commit**：`COMMIT_PLACEHOLDER`
+
+          ### 📝 本次变更详报 (Changelog)
+          ```text
+          MSG_PLACEHOLDER
+          ```
+
+          ---
+
+          ### 🎯 核心架构与解耦说明 (Architecture & Scope)
+          本发行版基于 [shihabal3amri/DiPlay](https://github.com/shihabal3amri/DiPlay) 进行架构解耦，专注于**通用 Android 车机（Android 7.1+）**的高效、低开销运行：
+          1. **比亚迪专有硬件依赖剥离**：
+             - **切断 ADB CAN 信号嗅探**：停止向 `5555` 端口轮询车速、电量、挡位与胎压，彻底消除探针重试造成的 CPU/内存浪费；
+             - **移除仪表盘/HUD 专有广播**：切断高德与 SOME-IP 专有投屏通道；
+             - **关闭氛围灯与来电弹窗常驻守护**：杜绝向系统服务注入 `app_process`。
+          2. **独立上游更新隔离**：
+             - 拦截并停用官方 GitHub Release 自动检查 Worker，确保定制 APK 不被官方原版覆盖。
+          3. **极简车机交互**：
+             - 隐藏专有无效设置卡片，仅保留核心投屏、分辨率（DPI/安全边距）、刷新率与音频通道分配。
+          4. **特性开关集中治理 (`FeatureConfig.kt`)**：
+             - 保留全部官方类结构，在入口处实施条件短路，确保未来 `git merge upstream/main` 实现 100% 自动无冲突合流。
+
+          ---
+
+          ### 📦 产物校验 (Verification)
+          | 文件名 | 类型 | 说明 |
+          | :--- | :--- | :--- |
+          | `diplay-v0.1.0-debug.apk` | Android 安装包 | 通用车机安装包 (支持 arm64/armv7a/x86/x86_64) |
+          | `sha256sum.txt` | 校验摘要 | SHA-256 哈希校验文本 |
+
+          EOF
+
+          sed -i "s/DATE_PLACEHOLDER/$DATE_STR/g" release_body.md
+          sed -i "s/COMMIT_PLACEHOLDER/$COMMIT_SHA/g" release_body.md
+          sed -i "s|MSG_PLACEHOLDER|$COMMIT_MSG|g" release_body.md
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0.1.0-preview
-          name: "DiPlay v0.1.0 (通用定制版)"
-          body: |
-            ## DiPlay v0.1.0 全新体验版 (通用 Android 车机定制)
-
-            本版本基于 DiPlay 进行深度解耦与优化：
-            - **版本**：0.1.0
-            - **精简专有功能**：切断比亚迪专属 ADB 探针与 HUD/仪表投屏，大幅减轻车机内存与后台开销。
-            - **纯净通用体验**：面向通用 Android 7.1+ 车机，支持有线与无线即插即用 CarPlay。
-            - **屏蔽官方升级检查**：避免定制版本被官方更新覆盖。
-
-            ### 下载文件
-            - `diplay-v0.1.0-debug.apk`：车机安装包
-            - `sha256sum.txt`：SHA-256 校验文件
+          name: "DiPlay v0.1.0 通用车机定制版 (Snapshot)"
+          body_path: release_body.md
           files: |
             release-artifacts/diplay-v0.1.0-debug.apk
             release-artifacts/sha256sum.txt
