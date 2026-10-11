@@ -1,6 +1,6 @@
-# DiPlay (Universal Android Head Unit Edition)
+# DiPlay
 
-[中文说明文档](README.md) · [Releases & Downloads](https://github.com/chaeoi/diplay/releases)
+[中文文档](README.md) · [Releases & Downloads](https://github.com/chaeoi/diplay/releases)
 
 A standalone CarPlay receiver for general Android automotive head units (Android 7.1+), based on [shihabal3amri/DiPlay](https://github.com/shihabal3amri/DiPlay).
 

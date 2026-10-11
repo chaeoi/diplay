@@ -1,6 +1,6 @@
-# DiPlay 通用车机定制版
+# DiPlay
 
-[English Documentation](README.en.md) · [Releases 下载](https://github.com/chaeoi/diplay/releases)
+[English](README.en.md) · [Releases 下载](https://github.com/chaeoi/diplay/releases)
 
 面向通用 Android 车机（Android 7.1+）的独立 CarPlay 协议接收端。基于 [shihabal3amri/DiPlay](https://github.com/shihabal3amri/DiPlay) 进行架构解耦与专有依赖裁剪。
 
@@ -17,14 +17,14 @@
 在非比亚迪的通用 Android 车机（如后装车机、公版方案或其它品牌车机）上，这些服务不仅无法工作，还会因为持续的探针重试、后台线程争用和 ADB 失败重连带来额外的 CPU 与内存开销。
 
 本分支专注于 **CarPlay 核心投屏通道的稳定性与通用性**：
-1. **完全切断专有硬件与协议依赖**：置空比亚迪私有服务探针与后台常驻，消除通用车机上的无效开销。
+1. **切断专有硬件与协议依赖**：置空比亚迪私有服务探针与后台常驻，消除通用车机上的无效开销。
 2. **精简车机端交互设置**：隐藏所有不可用的专有配置卡片，仅保留核心投屏、分辨率、帧率与音频路由项。
 3. **隔离官方版本检查**：关闭上游 GitHub Releases 自动检测与弹窗，防止定制 APK 被官方上游更新覆盖。
 4. **全自动持续集成构建**：主干每次提交均通过 GitHub Actions 自动编译生成 Release 安装包，版本自 `0.1.0` 起独立迭代。
 
 ---
 
-## 架构设计：与上游保持无痛同步
+## 架构设计：与上游保持平滑同步
 
 为了在上游持续修复底层 CarPlay 协议与音视频编解码 Bug 时能够平滑合流，本项目不物理删除上游任何专有实现类，而是通过位于 `shared/src/main/java/com/shilapi/xcertplay/FeatureConfig.kt` 的特性开关在调用入口处实施短路：
 
@@ -88,7 +88,7 @@ git merge upstream/main -m "chore: merge upstream changes"
 ## 编译与安装
 
 ### 预编译包
-直接从 [GitHub Releases](https://github.com/chaeoi/diplay/releases) 下载最新构建的 `diplay-v0.1.0-debug.apk` 并安装至车机。
+直接从 [GitHub Releases](https://github.com/chaeoi/diplay/releases) 下载最新构建的 `diplay-v0.1.0.apk` 并安装至车机。
 
 ### 本地源码构建
 
