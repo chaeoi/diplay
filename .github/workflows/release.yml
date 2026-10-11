@@ -30,8 +30,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
-        run: ./gradlew :mobile:assembleDebug --stacktrace
+      - name: Provision MFi Authentication Assets
+        run: |
+          mkdir -p /tmp/diplay-auth
+          python3 scripts/provision_auth_assets.py /tmp/diplay-auth
+
+      - name: Build Standalone APK
+        env:
+          DIPLAY_AUTH_ASSETS_DIR: /tmp/diplay-auth
+        run: ./gradlew :mobile:assembleStandaloneDebug --stacktrace
 
       - name: Prepare Release Artifacts and Detailed Changelog
         id: prep
