@@ -16,6 +16,7 @@ import android.widget.Toast
 import java.util.concurrent.atomic.AtomicBoolean
 import com.shilapi.xcertplay.adb.AdbKeys
 import com.shilapi.xcertplay.adb.LocalAdb
+import com.shilapi.xcertplay.telecom.PhoneAudioRoute
 import com.shilapi.xcertplay.airplay.AirPlayKnobState
 import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.glance.CarPlayGlance
@@ -90,6 +91,8 @@ class WheelKeyService : AccessibilityService() {
         running = this
         NavigationWheelSettings.recordAuthorization(this)
         CarPlayCallKeys.install(this)
+        // Lets the watcher for other apps' calls run whenever this accessibility service does.
+        PhoneAudioRoute.attach(this)
         refreshEligibility()
         handler.removeCallbacks(pollEligibility)
         handler.postDelayed(pollEligibility, ELIGIBILITY_POLL_MILLIS)
@@ -437,10 +440,12 @@ class WheelKeyService : AccessibilityService() {
 
         /**
          * The call controls need the service too: outside the CarPlay screen the call key reaches DiPlay
-         * only through it, and without it BYD's window manager opens its own phone app instead.
+         * only through it, and without it BYD's window manager opens its own phone app instead. So does the
+         * watcher for other apps' calls, which runs only while something keeps DiPlay alive.
          */
         internal fun wanted(context: Context): Boolean = WheelZoomSettings.anyEnabled(context) ||
-            BydOutputSettings.carPlayCallControls(context) || NavigationWheelSettings.restoreAllowed(context)
+            BydOutputSettings.carPlayCallControls(context) || NavigationWheelSettings.restoreAllowed(context) ||
+            BydOutputSettings.phoneAudioRouteApps(context)
 
         /**
          * Android takes the service off the allowed list when the app is force-stopped (BYD's system does

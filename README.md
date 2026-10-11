@@ -88,7 +88,7 @@ git merge upstream/main -m "chore: merge upstream changes"
 ## 编译与安装
 
 ### 预编译包
-直接从 [GitHub Releases](https://github.com/chaeoi/diplay/releases) 下载最新构建的 `diplay-0.1.0.apk` 并安装至车机。
+直接从 [GitHub Releases](https://github.com/chaeoi/diplay/releases) 下载最新构建的 `diplay-0.1.1.apk` 并安装至车机。
 
 ### 本地源码构建
 

@@ -5,7 +5,7 @@ commit_sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).de
 commit_msg = subprocess.check_output(["git", "log", "-1", "--pretty=%B"]).decode().strip()
 now_str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
-body = f"""## DiPlay 0.1.0
+body = f"""## DiPlay 0.1.1
 
 > **构建时间**：{now_str}
 > **Git Commit**：`{commit_sha}`
@@ -35,7 +35,7 @@ body = f"""## DiPlay 0.1.0
 ### 📦 产物校验 (Verification)
 | 文件名 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `diplay-0.1.0.apk` | Android 安装包 | 通用车机安装包 (支持 arm64/armv7a/x86/x86_64) |
+| `diplay-0.1.1.apk` | Android 安装包 | 通用车机安装包 (支持 arm64/armv7a/x86/x86_64) |
 | `sha256sum.txt` | 校验摘要 | SHA-256 哈希校验文本 |
 """
 
