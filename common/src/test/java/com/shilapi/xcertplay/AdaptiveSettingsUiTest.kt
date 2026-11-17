@@ -33,6 +33,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
@@ -49,6 +50,8 @@ import org.robolectric.util.ReflectionHelpers
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29], qualifiers = "en-w600dp-h700dp")
 class AdaptiveSettingsUiTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private val context get() = RuntimeEnvironment.getApplication()
     private var activity: DiPlayActivity? = null
 

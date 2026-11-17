@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import java.io.File
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -26,6 +27,8 @@ import org.robolectric.util.ReflectionHelpers
 @Config(sdk = [29], manifest = Config.NONE)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ClusterSpeedometerSettingsTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private val context get() = RuntimeEnvironment.getApplication()
     @Before fun clear() {
         context.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()

@@ -1,11 +1,13 @@
 package com.shilapi.xcertplay.update
 
 import android.content.Context
+import com.shilapi.xcertplay.UpstreamFeaturesRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,6 +17,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [25, 29, 35])
 class UpdateAvailabilityTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private val context: Context = RuntimeEnvironment.getApplication()
 
     @After fun clear() = UpdateAvailability.clearAllForTest(context)

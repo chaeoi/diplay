@@ -28,6 +28,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -43,6 +44,8 @@ import org.robolectric.annotation.LooperMode
 @Config(sdk = [32])
 @LooperMode(LooperMode.Mode.PAUSED)
 class BydVehicleDataSettingsTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private val context get() = RuntimeEnvironment.getApplication()
     private var controller: ActivityController<DiPlayActivity>? = null
     private val activity get() = requireNotNull(controller).get()

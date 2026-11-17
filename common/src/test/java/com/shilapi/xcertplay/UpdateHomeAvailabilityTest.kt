@@ -10,6 +10,7 @@ import com.shilapi.xcertplay.update.UpdateRelease
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -21,6 +22,8 @@ import org.robolectric.util.ReflectionHelpers
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29], qualifiers = "en-w900dp-h600dp-land")
 class UpdateHomeAvailabilityTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private val application: Application = RuntimeEnvironment.getApplication()
 
     @After fun clear() = UpdateAvailability.clearAllForTest(application)

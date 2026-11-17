@@ -12,6 +12,7 @@ import com.shilapi.xcertplay.orchestration.CarPlayController
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
@@ -29,6 +30,8 @@ import org.robolectric.util.ReflectionHelpers
 @Config(sdk = [28, 33], qualifiers = "en-w600dp-h700dp", manifest = Config.NONE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ClusterSettingsConsentTest {
+    @get:Rule val upstreamFeatures = UpstreamFeaturesRule()
+
     private lateinit var screen: DiPlayActivity
     private lateinit var activity: ActivityController<DiPlayActivity>
     private lateinit var session: CarPlayController
