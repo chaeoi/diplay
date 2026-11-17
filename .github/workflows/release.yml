@@ -1,66 +1,141 @@
-name: Build and Release
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+concurrency:
+  cancel-in-progress: false
+  group: diplay-release
+  queue: max
+jobs:
+  build:
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    if: needs.version.outputs.skip != 'true' && needs.version.outputs.released != 'true'
+    needs:
+    - version
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: 检查公开源码
+      run: python3 scripts/check_public_tree.py
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '25'
+    - uses: android-actions/setup-android@v3
+      with:
+        packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
+    - uses: gradle/actions/setup-gradle@v4
+    - name: 单元测试、Lint 与源码构建
+      run: ./gradlew :shared:testDebugUnitTest :common:testDebugUnitTest :home:testDebugUnitTest :mobile:lintDebug
+        :home:lintDebug :maphost:lintDebug :mobile:assembleDebug :home:assembleDebug :maphost:assembleDebug -PreleaseVersion="$VERSION"
+        --stacktrace
+    - name: 准备现有认证资源
+      run: 'mkdir -p "$RUNNER_TEMP/diplay-auth"
 
+        python3 scripts/provision_auth_assets.py "$RUNNER_TEMP/diplay-auth"
+
+        '
+    - name: 构建独立 APK
+      env:
+        DIPLAY_AUTH_ASSETS_DIR: ${{ runner.temp }}/diplay-auth
+      run: ./gradlew :mobile:assembleStandaloneDebug -PreleaseVersion="$VERSION" --stacktrace
+    - name: 验证并整理 APK
+      run: 'set -euo pipefail
+
+        mapfile -t apks < <(find mobile/build/outputs/apk/debug -maxdepth 1 -name "*.apk" -type f)
+
+        test "${#apks[@]}" -eq 1
+
+        apk="${apks[0]}"
+
+        analyzer="$(command -v apkanalyzer)"
+
+        test "$("$analyzer" manifest version-name "$apk")" = "$VERSION"
+
+        IFS=. read -r year month sequence <<< "$VERSION"
+
+        expected_code=$(( ((year - 2000) * 12 + month - 1) * 10000 + sequence ))
+
+        test "$("$analyzer" manifest version-code "$apk")" = "$expected_code"
+
+        mkdir -p dist
+
+        cp "$apk" "dist/diplay_${VERSION}.apk"
+
+        '
+    - uses: actions/upload-artifact@v7
+      with:
+        name: release-android
+        path: dist/*.apk
+        if-no-files-found: error
+        retention-days: 7
+        overwrite: true
+    timeout-minutes: 45
+  release:
+    env:
+      PRODUCT_NAME: DiPlay
+      RELEASE_ASSETS: diplay_${{ needs.version.outputs.version }}.apk SHA256SUMS
+      RELEASE_IMAGES: ''
+      VERSION: ${{ needs.version.outputs.version }}
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.version.outputs.skip != 'true' && (needs.build.result
+      == 'success' || (needs.build.result == 'skipped' && needs.version.outputs.released == 'true')) }}
+    name: 发布 GitHub Release
+    needs:
+    - version
+    - build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - env:
+        GH_TOKEN: ${{ github.token }}
+      id: state
+      name: 检查当前 Release 状态
+      run: python3 .github/scripts/state.py
+    - if: steps.state.outputs.released != 'true'
+      name: 下载构建产物
+      uses: actions/download-artifact@v7
+      with:
+        merge-multiple: true
+        path: dist
+        pattern: release-*
+    - if: steps.state.outputs.released != 'true'
+      name: 生成校验和
+      run: 'set -euo pipefail
+
+        (cd dist && sha256sum -- * > SHA256SUMS)
+
+        '
+    - env:
+        GH_TOKEN: ${{ github.token }}
+      id: publish
+      name: 发布或恢复 Release
+      run: python3 .github/scripts/publish.py
+  version:
+    name: 自动编号
+    outputs:
+      released: ${{ steps.number.outputs.released }}
+      skip: ${{ steps.number.outputs.skip }}
+      version: ${{ steps.number.outputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - env:
+        GH_TOKEN: ${{ github.token }}
+      id: number
+      name: 计算版本并创建标签
+      run: 'test "$GITHUB_REF" = refs/heads/main
+
+        python3 .github/scripts/version.py
+
+        '
+name: 自动发布 DiPlay
+'on':
+  push:
+    branches:
+    - main
+  workflow_dispatch: null
 permissions:
   contents: write
-
-jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Reject credential files in public source
-        run: python3 scripts/check_public_tree.py
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '25'
-
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools platforms;android-37.0 build-tools;36.0.0 ndk;28.2.13676358
-
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Provision MFi Authentication Assets
-        run: |
-          mkdir -p /tmp/diplay-auth
-          python3 scripts/provision_auth_assets.py /tmp/diplay-auth
-
-      - name: Build Standalone APK
-        env:
-          DIPLAY_AUTH_ASSETS_DIR: /tmp/diplay-auth
-        run: ./gradlew :mobile:assembleStandaloneDebug --stacktrace
-
-      - name: Prepare Release Artifacts and Detailed Changelog
-        id: prep
-        run: |
-          mkdir -p release-artifacts
-          APK_FILE="release-artifacts/diplay-0.1.1.apk"
-          cp mobile/build/outputs/apk/debug/*.apk "$APK_FILE"
-
-          cd release-artifacts
-          sha256sum diplay-0.1.1.apk > sha256sum.txt
-          cd ..
-
-          python3 scripts/generate_release_notes.py
-
-      - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: 0.1.1
-          name: "DiPlay 0.1.1"
-          body_path: release_body.md
-          files: |
-            release-artifacts/diplay-0.1.1.apk
-            release-artifacts/sha256sum.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

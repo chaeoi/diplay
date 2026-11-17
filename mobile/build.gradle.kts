@@ -7,6 +7,19 @@ plugins {
 val localAuthenticationAssets = providers.environmentVariable("DIPLAY_AUTH_ASSETS_DIR")
     .orNull?.let { file(it).canonicalFile }
 
+val appReleaseVersion = providers.gradleProperty("releaseVersion").getOrElse("0.0.0-dev")
+val appReleaseVersionCode = if (appReleaseVersion == "0.0.0-dev") {
+    1
+} else {
+    val match = Regex("([2-9][0-9]{3})\\.([1-9]|1[0-2])\\.([1-9][0-9]*)")
+        .matchEntire(appReleaseVersion)
+        ?: error("releaseVersion must be year.month.sequence")
+    val (year, month, sequence) = match.destructured
+    val serial = sequence.toInt()
+    require(serial in 1..9999) { "Android versionCode supports 1..9999 releases per month" }
+    ((year.toInt() - 2000) * 12 + month.toInt() - 1) * 10000 + serial
+}
+
 android {
     namespace = "com.shilapi.xcertplay"
     compileSdk {
@@ -17,8 +30,8 @@ android {
         applicationId = "com.open.diplay"
         minSdk = 25
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = appReleaseVersionCode
+        versionName = appReleaseVersion
 
     }
 

@@ -20,7 +20,7 @@
 1. **切断专有硬件与协议依赖**：置空比亚迪私有服务探针与后台常驻，消除通用车机上的无效开销。
 2. **精简车机端交互设置**：隐藏所有不可用的专有配置卡片，仅保留核心投屏、分辨率、帧率与音频路由项。
 3. **隔离官方版本检查**：关闭上游 GitHub Releases 自动检测与弹窗，防止定制 APK 被官方上游更新覆盖。
-4. **全自动持续集成构建**：主干每次提交均通过 GitHub Actions 自动编译生成 Release 安装包，版本自 `0.1.0` 起独立迭代。
+4. **全自动持续集成构建**：推送到 `main` 后通过 GitHub Actions 自动编号、构建并发布 APK，定制版本独立采用 `年.月.序号`。
 
 ---
 
@@ -88,7 +88,13 @@ git merge upstream/main -m "chore: merge upstream changes"
 ## 编译与安装
 
 ### 预编译包
-直接从 [GitHub Releases](https://github.com/chaeoi/diplay/releases) 下载最新构建的 `diplay-0.1.1.apk` 并安装至车机。
+从 [最新正式版本](https://github.com/chaeoi/diplay/releases/latest) 下载 `diplay_<版本>.apk`，按附件 `SHA256SUMS` 校验后安装至车机。
+
+### 定制版本编号
+
+`main` 推送或手动运行发布流程时，以提交者时间的 UTC 年月和当月最大已分配序号加一生成版本，例如 `2026.11.1`。同一提交重跑复用原编号，失败预留号不回收；官方分支和官方标签保留原版本。
+
+APK 的 `versionName` 使用该版本，`versionCode` 为 `((年 - 2000) × 12 + 月 - 1) × 10000 + 序号`，每月支持 1–9999 个版本。构建时通过 `-PreleaseVersion=2026.11.1` 注入；普通源码构建使用 `0.0.0-dev`。正式附件发布后保持不变，只有最大正式版本会成为 latest。
 
 ### 本地源码构建
 

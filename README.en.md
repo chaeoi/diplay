@@ -20,7 +20,11 @@ This repository decouples those proprietary subsystems and focuses strictly on *
 1. **Proprietary Vendor Decoupling**: Short-circuits vendor-specific ADB probes and background workers at the call boundary.
 2. **Simplified Head Unit Interface**: Hides inapplicable settings cards and streamlines options down to projection, display, and audio routing.
 3. **Upstream Update Isolation**: Disables upstream update checks to prevent custom builds from being overwritten.
-4. **Automated Continuous Delivery**: Every commit to `main` automatically triggers an APK build and publishes a GitHub Release, starting with version `0.1.0`.
+4. **Automated Continuous Delivery**: Pushes to `main` allocate an independent `year.month.sequence` version, build the APK, and publish a GitHub Release.
+
+The year and month come from the commit's UTC committer timestamp. The sequence is the largest allocated tag for that month plus one. Reruns reuse the same tag; failed allocations remain reserved. Official branches and tags keep their upstream versions. Download `diplay_<version>.apk` and `SHA256SUMS` from the [latest release](https://github.com/chaeoi/diplay/releases/latest).
+
+`versionName` matches the release. Android `versionCode` is `((year - 2000) * 12 + month - 1) * 10000 + sequence`, supporting 1–9999 releases per month. Pass `-PreleaseVersion=2026.11.1` when building a numbered APK; ordinary source builds use `0.0.0-dev`. Published attachments remain unchanged, and only the greatest published version becomes latest.
 
 ---
 
